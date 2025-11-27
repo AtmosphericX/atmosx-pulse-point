@@ -1,8 +1,16 @@
 # AtmosphericX - PulsePoint Polling
 
-PulsePoint is a public emergency response system used by fire departments, EMS agencies, and dispatch centers to share live incident information with the public. This module provides a way to poll and decrypt the data provided by PulsePoint. Please keep in mind that this module is unofficial and not endorsed by PulsePoint or its parent organization. 
+<div align="center">
+  	<p align = "center">PulsePoint is a public emergency response system used by fire departments, EMS agencies, and dispatch centers to share live incident information with the public. This module provides a way to poll and decrypt the data provided by PulsePoint. Please keep in mind that this module is unofficial and not endorsed by PulsePoint or its parent organization. This module is primarily intended for use with the [AtmosphericX](https://github.com/k3yomi/AtmosphericX) project. This README provides basic information about the module.</small></p>
+  	<p align = "center">Documentation written by @k3yomi</p>
+	<div align="center" style="border: none;">
+		<img alt="GitHub Repo stars" src="https://img.shields.io/github/stars/k3yomi/atmosx-pulse-point">
+		<img alt="GitHub forks" src="https://img.shields.io/github/forks/k3yomi/atmosx-pulse-point">
+		<img alt="GitHub issues" src="https://img.shields.io/github/issues/k3yomi/atmosx-pulse-point">
+		<img alt="GitHub pull requests" src="https://img.shields.io/github/issues-pr/k3yomi/atmosx-pulse-point">
+	</div>
+</div>
 
-This module is primarily intended for use with the [AtmosphericX](https://github.com/k3yomi/AtmosphericX) project. This README provides basic information about the module.
 
 ## Installation Guide
 ```bash
