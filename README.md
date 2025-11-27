@@ -97,6 +97,7 @@ pulse.stop();
 ## Acknowledgements
 - [CJ Ziegler](https://www.youtube.com/channel/UCx_mcHxMvZ8PBmVTtg6Ddtw)
     - For inspiring me to create this module for storm spotting and night crawling streams.
+    - Storm Spotter @ AtmosphericX
 - [k3yomi](https://github.com/k3yomi)
     - Lead developer @ AtmosphericX and maintainer of this module.
 - [StarflightWx](https://x.com/starflightVR)
