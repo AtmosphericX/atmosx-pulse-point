@@ -12,7 +12,7 @@
 </div>
 
 
-## Installation Guide
+## Installation (NPM)
 ```bash
 npm install atmosx-pulse-point
 ```
