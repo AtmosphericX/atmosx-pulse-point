@@ -12,6 +12,7 @@
 	"scripts": {
 		"start": "cd ./test && node ./index.js",
 		"build:tsup": "tsup && cd ./test && node ./index.js",
+		"publish-github": "tsup && npm publish --registry https://npm.pkg.github.com/ --name @k3yomi/atmosx-pulse-point",
 		"publish": "tsup && npm publish --access public",
 		"publish-beta": "tsup && npm publish --tag beta --access public"
 	},
@@ -29,9 +30,6 @@
 	"license": "MIT",
 	"bugs": {
 		"url": "https://github.com/K3YOMI/atmosx-pulse-point/issues"
-	},
-	"publishConfig": {
-		"registry": "https://npm.pkg.github.com/"
 	},
 	"homepage": "https://github.com/K3YOMI/atmosx-pulse-point#readme",
 	"dependencies": {
