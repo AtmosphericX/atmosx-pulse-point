@@ -1,6 +1,6 @@
 {
 	"name": "atmosx-pulse-point",
-	"version": "1.0.003",
+	"version": "1.0.0031",
 	"description": "AtmosphericX PulsePoint Polling - Built for standalone and Project AtmosphericX Integration.",
 	"main": "dist/cjs/index.cjs",
 	"module": "dist/esm/index.mjs",
@@ -29,6 +29,9 @@
 	"license": "MIT",
 	"bugs": {
 		"url": "https://github.com/K3YOMI/atmosx-pulse-point/issues"
+	},
+	"publishConfig": {
+		"registry": "https://npm.pkg.github.com/"
 	},
 	"homepage": "https://github.com/K3YOMI/atmosx-pulse-point#readme",
 	"dependencies": {
