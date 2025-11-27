@@ -572,24 +572,31 @@ var PulsePoint = class {
       const newIncidents = decIncidents.map((i) => {
         var _a2, _b2, _c2, _d2;
         const agency = cache.stations.find((a) => a.agencyid === i.AgencyID);
+        const latitude = i.Latitude === "0.0000000000" ? null : Number(i.Latitude);
+        const longitude = i.Longitude === "0.0000000000" ? null : Number(i.Longitude);
         return {
-          ID: i.ID,
-          agency: (_a2 = agency == null ? void 0 : agency.short_agencyname) != null ? _a2 : "Unknown Agency",
-          stream: (_b2 = agency == null ? void 0 : agency.livestreamurl) != null ? _b2 : null,
-          latitude: i.Latitude === "0.0000000000" ? null : i.Latitude,
-          longitude: i.Longitude === "0.0000000000" ? null : i.Longitude,
-          address: (_c2 = i.FullDisplayAddress) != null ? _c2 : "Not Specified",
-          type: (_d2 = definitions.events[i.PulsePointIncidentCallType]) != null ? _d2 : "Unknown",
-          received: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString() : null,
-          closed: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString() : null,
-          units: Array.isArray(i.Unit) ? i.Unit.map((u) => {
-            var _a3;
-            return {
-              id: u.UnitID,
-              status: (_a3 = definitions.status[u.PulsePointDispatchStatus]) != null ? _a3 : "Unknown",
-              closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toISOString() : null
-            };
-          }) : []
+          type: "Feature",
+          geometry: latitude !== null && longitude !== null ? {
+            type: "Point",
+            coordinates: [longitude, latitude]
+          } : null,
+          properties: {
+            ID: i.ID,
+            agency: (_a2 = agency == null ? void 0 : agency.short_agencyname) != null ? _a2 : "Unknown Agency",
+            stream: (_b2 = agency == null ? void 0 : agency.livestreamurl) != null ? _b2 : null,
+            address: (_c2 = i.FullDisplayAddress) != null ? _c2 : "Not Specified",
+            type: (_d2 = definitions.events[i.PulsePointIncidentCallType]) != null ? _d2 : "Unknown",
+            received: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString() : null,
+            closed: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString() : null,
+            units: Array.isArray(i.Unit) ? i.Unit.map((u) => {
+              var _a3;
+              return {
+                id: u.UnitID,
+                status: (_a3 = definitions.status[u.PulsePointDispatchStatus]) != null ? _a3 : "Unknown",
+                closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toISOString() : null
+              };
+            }) : []
+          }
         };
       });
       const filters = (_i = (_h = (_g = settings.filtering) == null ? void 0 : _g.events) == null ? void 0 : _h.map((f) => f.toLowerCase())) != null ? _i : [];

@@ -168,24 +168,28 @@ export class PulsePoint {
         }
         const newIncidents = decIncidents.map(i => {
             const agency = loader.cache.stations.find(a => a.agencyid === i.AgencyID);
+            const latitude = i.Latitude === "0.0000000000" ? null : Number(i.Latitude);
+            const longitude = i.Longitude === "0.0000000000" ? null : Number(i.Longitude);
             return {
-                ID: i.ID,
-                agency: agency?.short_agencyname ?? "Unknown Agency",
-                stream: agency?.livestreamurl ?? null,
-                latitude: i.Latitude === "0.0000000000" ? null : i.Latitude,
-                longitude: i.Longitude === "0.0000000000" ? null : i.Longitude,
-                address: i.FullDisplayAddress ?? "Not Specified",
-                type: loader.definitions.events[i.PulsePointIncidentCallType] ?? "Unknown",
-                received: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString()
-                    : null,
-                closed: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString()
-                    : null,
-                units: Array.isArray(i.Unit) ? i.Unit.map(u => ({
-                    id: u.UnitID,
-                    status: loader.definitions.status[u.PulsePointDispatchStatus] ?? "Unknown",
-                    closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toISOString()
-                    : null})) 
-                : []
+                type: "Feature",
+                geometry: latitude !== null && longitude !== null ? {
+                    type: "Point",
+                    coordinates: [longitude, latitude]
+                } : null,
+                properties: {
+                    ID: i.ID,
+                    agency: agency?.short_agencyname ?? "Unknown Agency",
+                    stream: agency?.livestreamurl ?? null,
+                    address: i.FullDisplayAddress ?? "Not Specified",
+                    type: loader.definitions.events[i.PulsePointIncidentCallType] ?? "Unknown",
+                    received: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString() : null,
+                    closed: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString() : null,
+                    units: Array.isArray(i.Unit) ? i.Unit.map(u => ({
+                        id: u.UnitID,
+                        status: loader.definitions.status[u.PulsePointDispatchStatus] ?? "Unknown",
+                        closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toISOString() : null
+                    })) : []
+                }
             };
         });
         const filters = loader.settings.filtering?.events?.map(f => f.toLowerCase()) ?? [];
