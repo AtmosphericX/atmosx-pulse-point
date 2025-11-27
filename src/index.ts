@@ -68,9 +68,9 @@ export class PulsePoint {
         const settings = loader.settings as types.ClientSettingsTypes;
         const interval = settings.interval || 15;
         if (this.job) { this.job.stop(); }
-        await this.getEvents(settings.agencies || [], loader.settings.key || '')
+        await this.getEvents(settings.filtering.agencies || [], loader.settings.key || '')
         this.job = new loader.packages.jobs.Cron(`*/${interval} * * * * *`, async () => {
-            await this.getEvents(settings.agencies || [], loader.settings.key || '')
+            await this.getEvents(settings.filtering.agencies || [], loader.settings.key || '')
         })
     }
 
@@ -129,25 +129,30 @@ export class PulsePoint {
         }
         const newIncidents = dActive.map(item => {
             const agency = loader.cache.stations.find(a => a.agencyid === item.AgencyID);
+            const latitude = item.Latitude === '0.0000000000' ? null : item.Latitude;
+            const longitude = item.Longitude === '0.0000000000' ? null : item.Longitude;
             return {
                 ID: item.ID,
                 agency: agency?.short_agencyname || "Unknown Agency",
                 stream: agency?.livestreamurl || null,
-                latitude: item.Latitude,
-                longitude: item.Longitude,
+                latitude,
+                longitude,
                 address: item.FullDisplayAddress ?? "Not Specified",
                 type: loader.definitions.events[item.PulsePointIncidentCallType] || "Unknown",
-                received: item.CallReceivedDateTime,
-                closed: item.ClosedDateTime || false,
+                received: item.CallReceivedDateTime ? new Date(item.CallReceivedDateTime).toLocaleString() : null,
+                closed: item.ClosedDateTime ? new Date(item.ClosedDateTime).toLocaleString() : false,
                 units: Array.isArray(item.Unit) ? item.Unit.map(u => ({
                     id: u.UnitID,
                     status: loader.definitions.status[u.PulsePointDispatchStatus] || "Unknown",
-                    closed: u.UnitClearedDateTime || null,
+                    closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toLocaleString() : null,
                 })) : [],
             };
         });
+        const filteredIncidents = loader.settings.filtering?.events?.length ? newIncidents.filter(incident =>
+            loader.settings.filtering!.events!.some(e => e.toLowerCase() === incident.type.toLowerCase()))
+            : newIncidents;
         const oldIncMap = new Map((loader.cache.active || []).map(i => [i.ID, i]));
-        for (const incident of newIncidents) {
+        for (const incident of filteredIncidents) {
             const oldIncident = oldIncMap.get(incident.ID);
             if (!oldIncident || JSON.stringify(oldIncident) !== JSON.stringify(incident)) {
                 loader.cache.events.emit('onIncidentUpdate', incident);

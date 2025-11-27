@@ -16,7 +16,10 @@
 // --- Exports --- //
 export interface ClientSettingsTypes {
     key?: string | null;
-    agencies: string[];
+    filtering?: { 
+        events?: string[];
+        agencies?: string[];
+    };
     interval?: number;
     journal?: boolean;
 }

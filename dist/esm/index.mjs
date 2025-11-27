@@ -194,7 +194,10 @@ var cache = {
 var settings = {
   key: null,
   interval: 15,
-  agencies: [],
+  filtering: {
+    events: [],
+    agencies: []
+  },
   journal: true
 };
 var definitions = {
@@ -419,9 +422,9 @@ var PulsePoint = class {
       if (this.job) {
         this.job.stop();
       }
-      yield this.getEvents(settings2.agencies || [], settings.key || "");
+      yield this.getEvents(settings2.filtering.agencies || [], settings.key || "");
       this.job = new packages.jobs.Cron(`*/${interval} * * * * *`, () => __async(this, null, function* () {
-        yield this.getEvents(settings2.agencies || [], settings.key || "");
+        yield this.getEvents(settings2.filtering.agencies || [], settings.key || "");
       }));
     });
   }
@@ -458,7 +461,7 @@ var PulsePoint = class {
    */
   getEvents(agencies, key) {
     return __async(this, null, function* () {
-      var _a, _b;
+      var _a, _b, _c, _d;
       const data = {};
       const urls = [
         `https://api.pulsepoint.org/v1/webapp?resource=agencies&agencyid=${agencies.join(",")}`,
@@ -486,25 +489,28 @@ var PulsePoint = class {
       const newIncidents = dActive.map((item) => {
         var _a2;
         const agency = cache.stations.find((a) => a.agencyid === item.AgencyID);
+        const latitude = item.Latitude === "0.0000000000" ? null : item.Latitude;
+        const longitude = item.Longitude === "0.0000000000" ? null : item.Longitude;
         return {
           ID: item.ID,
           agency: (agency == null ? void 0 : agency.short_agencyname) || "Unknown Agency",
           stream: (agency == null ? void 0 : agency.livestreamurl) || null,
-          latitude: item.Latitude,
-          longitude: item.Longitude,
+          latitude,
+          longitude,
           address: (_a2 = item.FullDisplayAddress) != null ? _a2 : "Not Specified",
           type: definitions.events[item.PulsePointIncidentCallType] || "Unknown",
-          received: item.CallReceivedDateTime,
-          closed: item.ClosedDateTime || false,
+          received: item.CallReceivedDateTime ? new Date(item.CallReceivedDateTime).toLocaleString() : null,
+          closed: item.ClosedDateTime ? new Date(item.ClosedDateTime).toLocaleString() : false,
           units: Array.isArray(item.Unit) ? item.Unit.map((u) => ({
             id: u.UnitID,
             status: definitions.status[u.PulsePointDispatchStatus] || "Unknown",
-            closed: u.UnitClearedDateTime || null
+            closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toLocaleString() : null
           })) : []
         };
       });
+      const filteredIncidents = ((_d = (_c = settings.filtering) == null ? void 0 : _c.events) == null ? void 0 : _d.length) ? newIncidents.filter((incident) => settings.filtering.events.some((e) => e.toLowerCase() === incident.type.toLowerCase())) : newIncidents;
       const oldIncMap = new Map((cache.active || []).map((i) => [i.ID, i]));
-      for (const incident of newIncidents) {
+      for (const incident of filteredIncidents) {
         const oldIncident = oldIncMap.get(incident.ID);
         if (!oldIncident || JSON.stringify(oldIncident) !== JSON.stringify(incident)) {
           cache.events.emit("onIncidentUpdate", incident);

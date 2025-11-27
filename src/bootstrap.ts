@@ -43,7 +43,10 @@ export const cache = {
 export const settings = { 
     key: null,
     interval: 15,
-    agencies: [],
+    filtering: {
+        events: [],
+        agencies: [],
+    },
     journal: true,
 };
 
