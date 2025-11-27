@@ -1,6 +1,6 @@
 {
 	"name": "atmosx-pulse-point",
-	"version": "1.0.0031",
+	"version": "1.0.0032",
 	"description": "AtmosphericX PulsePoint Polling - Built for standalone and Project AtmosphericX Integration.",
 	"main": "dist/cjs/index.cjs",
 	"module": "dist/esm/index.mjs",
