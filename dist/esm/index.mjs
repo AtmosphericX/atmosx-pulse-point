@@ -204,8 +204,12 @@ var definitions = {
   events: EVENTS,
   status: STATUS,
   messages: {
-    not_ready: `AtmosphericX PulsePoint client is not ready. This may be due to failed initialization.`,
-    client_stopped: `AtmosphericX PulsePoint client has been stopped.`
+    not_ready: `PulsePoint client is not ready. This may be due to failed initialization.`,
+    client_stopped: `PulsePoint client has been stopped.`,
+    stations_updated: `PulsePoint station list has been updated.`,
+    decrypt_fail: `Failed to decrypt PulsePoint data. Please verify your passphrase key is correct.`,
+    no_encrypted_data: `No encrypted data received from PulsePoint API.`,
+    failed_fetch: `Failed to fetch data from PulsePoint API.`
   }
 };
 
@@ -472,6 +476,16 @@ var PulsePoint = class {
     });
   }
   /**
+   * @function getAvailableEvents
+   * @description
+   *     Returns a list of all defined event types that can be filtered.
+   * 
+   * @returns {string[]}
+   */
+  getAvailableEvents() {
+    return Object.values(definitions.events);
+  }
+  /**
    * @function getEvents
    * @description
    *      Fetches and processes agency and incident data from the PulsePoint API.
@@ -483,58 +497,74 @@ var PulsePoint = class {
    */
   getEvents(agencies, key) {
     return __async(this, null, function* () {
-      var _a, _b, _c, _d;
-      const data = {};
-      const urls = [
-        `https://api.pulsepoint.org/v1/webapp?resource=agencies&agencyid=${agencies.join(",")}`,
-        `https://api.pulsepoint.org/v1/webapp?resource=incidents&agencyid=${agencies.join(",")}`
-      ];
-      for (const url of urls) {
-        const response = yield utils_default.createHttpRequest(url);
-        if (response.error) {
-          utils_default.warn(`Failed to fetch agencies list: ${response.message}`);
-          continue;
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+      if (!agencies.length) return;
+      const agencyIds = agencies.join(",");
+      const urls = {
+        agencies: `https://api.pulsepoint.org/v1/webapp?resource=agencies&agencyid=${agencyIds}`,
+        incidents: `https://api.pulsepoint.org/v1/webapp?resource=incidents&agencyid=${agencyIds}`
+      };
+      const responses = yield Promise.all(
+        Object.entries(urls).map((_0) => __async(null, [_0], function* ([type, url]) {
+          var _a2;
+          const res = yield utils_default.createHttpRequest(url);
+          if (res.error) {
+            utils_default.warn(definitions.messages.failed_fetch + ` (${type}): ${res.message}`);
+            return [type, {}];
+          }
+          return [type, (_a2 = res.message) != null ? _a2 : {}];
+        }))
+      );
+      const data = Object.fromEntries(responses);
+      const encrypted = decrypt_default.findObjects(data);
+      if (!encrypted.length) {
+        return utils_default.warn(definitions.messages.no_encrypted_data, true);
+      }
+      const decrypted = encrypted.map((obj) => {
+        try {
+          return decrypt_default.CtIvS(obj, key);
+        } catch (err) {
+          utils_default.warn(definitions.messages.decrypt_fail, true);
+          return {};
         }
-        data[url.includes("agencies") ? "agencies" : "incidents"] = response.message || {};
+      });
+      const decAgencies = (_b = (_a = decrypted.find((d) => d.agencies)) == null ? void 0 : _a.agencies) != null ? _b : [];
+      const decIncidents = (_e = (_d = (_c = decrypted.find((d) => d.incidents)) == null ? void 0 : _c.incidents) == null ? void 0 : _d.active) != null ? _e : [];
+      const oldStations = (_f = cache.stations) != null ? _f : [];
+      cache.stations = decAgencies;
+      if (JSON.stringify(oldStations) !== JSON.stringify(decAgencies)) {
+        cache.events.emit("onStationUpdate", decAgencies, oldStations);
+        utils_default.warn(definitions.messages.stations_updated, true);
       }
-      const encryptedItems = decrypt_default.findObjects(data);
-      const decryptedItems = encryptedItems.map((item) => decrypt_default.CtIvS(item, key));
-      const incidentsObj = decryptedItems.find((d) => d.incidents);
-      const dAgencies = ((_a = decryptedItems[0]) == null ? void 0 : _a.agencies) || [];
-      const dActive = ((_b = incidentsObj == null ? void 0 : incidentsObj.incidents) == null ? void 0 : _b.active) || [];
-      const oldStations = cache.stations || [];
-      cache.stations = dAgencies;
-      if (JSON.stringify(oldStations) !== JSON.stringify(dAgencies)) {
-        cache.events.emit("onStationUpdate", dAgencies, oldStations);
-        utils_default.warn(`Station list updated`, true);
-      }
-      const newIncidents = dActive.map((item) => {
-        var _a2;
-        const agency = cache.stations.find((a) => a.agencyid === item.AgencyID);
-        const latitude = item.Latitude === "0.0000000000" ? null : item.Latitude;
-        const longitude = item.Longitude === "0.0000000000" ? null : item.Longitude;
+      const newIncidents = decIncidents.map((i) => {
+        var _a2, _b2, _c2, _d2;
+        const agency = cache.stations.find((a) => a.agencyid === i.AgencyID);
         return {
-          ID: item.ID,
-          agency: (agency == null ? void 0 : agency.short_agencyname) || "Unknown Agency",
-          stream: (agency == null ? void 0 : agency.livestreamurl) || null,
-          latitude,
-          longitude,
-          address: (_a2 = item.FullDisplayAddress) != null ? _a2 : "Not Specified",
-          type: definitions.events[item.PulsePointIncidentCallType] || "Unknown",
-          received: item.CallReceivedDateTime ? new Date(item.CallReceivedDateTime).toLocaleString() : null,
-          closed: item.ClosedDateTime ? new Date(item.ClosedDateTime).toLocaleString() : false,
-          units: Array.isArray(item.Unit) ? item.Unit.map((u) => ({
-            id: u.UnitID,
-            status: definitions.status[u.PulsePointDispatchStatus] || "Unknown",
-            closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toLocaleString() : null
-          })) : []
+          ID: i.ID,
+          agency: (_a2 = agency == null ? void 0 : agency.short_agencyname) != null ? _a2 : "Unknown Agency",
+          stream: (_b2 = agency == null ? void 0 : agency.livestreamurl) != null ? _b2 : null,
+          latitude: i.Latitude === "0.0000000000" ? null : i.Latitude,
+          longitude: i.Longitude === "0.0000000000" ? null : i.Longitude,
+          address: (_c2 = i.FullDisplayAddress) != null ? _c2 : "Not Specified",
+          type: (_d2 = definitions.events[i.PulsePointIncidentCallType]) != null ? _d2 : "Unknown",
+          received: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString() : null,
+          closed: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString() : null,
+          units: Array.isArray(i.Unit) ? i.Unit.map((u) => {
+            var _a3;
+            return {
+              id: u.UnitID,
+              status: (_a3 = definitions.status[u.PulsePointDispatchStatus]) != null ? _a3 : "Unknown",
+              closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toISOString() : null
+            };
+          }) : []
         };
       });
-      const filteredIncidents = ((_d = (_c = settings.filtering) == null ? void 0 : _c.events) == null ? void 0 : _d.length) ? newIncidents.filter((incident) => settings.filtering.events.some((e) => e.toLowerCase() === incident.type.toLowerCase())) : newIncidents;
-      const oldIncMap = new Map((cache.active || []).map((i) => [i.ID, i]));
+      const filters = (_i = (_h = (_g = settings.filtering) == null ? void 0 : _g.events) == null ? void 0 : _h.map((f) => f.toLowerCase())) != null ? _i : [];
+      const filteredIncidents = filters.length === 0 ? newIncidents : newIncidents.filter((i) => filters.includes(i.type.toLowerCase()));
+      const oldMap = new Map(((_j = cache.active) != null ? _j : []).map((i) => [i.ID, i]));
       for (const incident of filteredIncidents) {
-        const oldIncident = oldIncMap.get(incident.ID);
-        if (!oldIncident || JSON.stringify(oldIncident) !== JSON.stringify(incident)) {
+        const prev = oldMap.get(incident.ID);
+        if (!prev || JSON.stringify(prev) !== JSON.stringify(incident)) {
           cache.events.emit("onIncidentUpdate", incident);
         }
       }

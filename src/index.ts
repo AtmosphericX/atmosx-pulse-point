@@ -105,10 +105,22 @@ export class PulsePoint {
             Utils.warn(`Failed to fetch agencies list: ${response.message}`);
             return [];
         }
+
         const data: any = response.message || {};
         const encryptedItems = Decrypt.findObjects(data);
         const decryptedItems = encryptedItems.map(item => Decrypt.CtIvS(item, loader.settings.key || ''));
         return decryptedItems[0]?.searchagencies || [];
+    }
+
+    /**
+     * @function getAvailableEvents
+     * @description
+     *     Returns a list of all defined event types that can be filtered.
+     * 
+     * @returns {string[]}
+     */
+    public getAvailableEvents(): string[] {
+        return Object.values(loader.definitions.events);
     }
 
     /**
@@ -122,60 +134,68 @@ export class PulsePoint {
      * @returns {Promise<void>}
      */
     private async getEvents(agencies: string[], key: string): Promise<void> {
-        const data: any = {};
-        const urls = [
-            `https://api.pulsepoint.org/v1/webapp?resource=agencies&agencyid=${agencies.join(',')}`,
-            `https://api.pulsepoint.org/v1/webapp?resource=incidents&agencyid=${agencies.join(',')}`
-        ];
-        for (const url of urls) {
-            const response = await Utils.createHttpRequest(url);
-            if (response.error) {
-                Utils.warn(`Failed to fetch agencies list: ${response.message}`);
-                continue;
-            }
-            data[url.includes('agencies') ? 'agencies' : 'incidents'] = response.message || {};
+        if (!agencies.length) return;
+        const agencyIds = agencies.join(",");
+        const urls = {
+            agencies: `https://api.pulsepoint.org/v1/webapp?resource=agencies&agencyid=${agencyIds}`,
+            incidents: `https://api.pulsepoint.org/v1/webapp?resource=incidents&agencyid=${agencyIds}`
+        };
+        const responses = await Promise.all(
+            Object.entries(urls).map(async ([type, url]) => {
+                const res = await Utils.createHttpRequest(url);
+                if (res.error) {
+                    Utils.warn(loader.definitions.messages.failed_fetch + ` (${type}): ${res.message}`);
+                    return [type, {}] as const;
+                }
+                return [type, res.message ?? {}] as const;
+            })
+        );
+        const data = Object.fromEntries(responses) as {agencies: any; incidents: any;};
+        const encrypted = Decrypt.findObjects(data);
+        if (!encrypted.length) {
+            return Utils.warn(loader.definitions.messages.no_encrypted_data, true);
         }
-        const encryptedItems = Decrypt.findObjects(data);
-        const decryptedItems = encryptedItems.map(item => Decrypt.CtIvS(item, key));
-        const incidentsObj = decryptedItems.find(d => d.incidents);
-        const dAgencies = decryptedItems[0]?.agencies || [];
-        const dActive = incidentsObj?.incidents?.active || [];
-
-        const oldStations = loader.cache.stations || [];
-        loader.cache.stations = dAgencies;
-        if (JSON.stringify(oldStations) !== JSON.stringify(dAgencies)) {
-            loader.cache.events.emit('onStationUpdate', dAgencies, oldStations);
-            Utils.warn(`Station list updated`, true);
+        const decrypted = encrypted.map(obj => {
+            try { return Decrypt.CtIvS(obj, key); } catch (err) { Utils.warn(loader.definitions.messages.decrypt_fail, true); return {}; }
+        });
+        const decAgencies = decrypted.find(d => d.agencies)?.agencies ?? [];
+        const decIncidents = decrypted.find(d => d.incidents)?.incidents?.active ?? [];
+        const oldStations = loader.cache.stations ?? [];
+        loader.cache.stations = decAgencies;
+        if (JSON.stringify(oldStations) !== JSON.stringify(decAgencies)) {
+            loader.cache.events.emit("onStationUpdate", decAgencies, oldStations);
+            Utils.warn(loader.definitions.messages.stations_updated, true);
         }
-        const newIncidents = dActive.map(item => {
-            const agency = loader.cache.stations.find(a => a.agencyid === item.AgencyID);
-            const latitude = item.Latitude === '0.0000000000' ? null : item.Latitude;
-            const longitude = item.Longitude === '0.0000000000' ? null : item.Longitude;
+        const newIncidents = decIncidents.map(i => {
+            const agency = loader.cache.stations.find(a => a.agencyid === i.AgencyID);
             return {
-                ID: item.ID,
-                agency: agency?.short_agencyname || "Unknown Agency",
-                stream: agency?.livestreamurl || null,
-                latitude,
-                longitude,
-                address: item.FullDisplayAddress ?? "Not Specified",
-                type: loader.definitions.events[item.PulsePointIncidentCallType] || "Unknown",
-                received: item.CallReceivedDateTime ? new Date(item.CallReceivedDateTime).toLocaleString() : null,
-                closed: item.ClosedDateTime ? new Date(item.ClosedDateTime).toLocaleString() : false,
-                units: Array.isArray(item.Unit) ? item.Unit.map(u => ({
+                ID: i.ID,
+                agency: agency?.short_agencyname ?? "Unknown Agency",
+                stream: agency?.livestreamurl ?? null,
+                latitude: i.Latitude === "0.0000000000" ? null : i.Latitude,
+                longitude: i.Longitude === "0.0000000000" ? null : i.Longitude,
+                address: i.FullDisplayAddress ?? "Not Specified",
+                type: loader.definitions.events[i.PulsePointIncidentCallType] ?? "Unknown",
+                received: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString()
+                    : null,
+                closed: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString()
+                    : null,
+                units: Array.isArray(i.Unit) ? i.Unit.map(u => ({
                     id: u.UnitID,
-                    status: loader.definitions.status[u.PulsePointDispatchStatus] || "Unknown",
-                    closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toLocaleString() : null,
-                })) : [],
+                    status: loader.definitions.status[u.PulsePointDispatchStatus] ?? "Unknown",
+                    closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toISOString()
+                    : null})) 
+                : []
             };
         });
-        const filteredIncidents = loader.settings.filtering?.events?.length ? newIncidents.filter(incident =>
-            loader.settings.filtering!.events!.some(e => e.toLowerCase() === incident.type.toLowerCase()))
-            : newIncidents;
-        const oldIncMap = new Map((loader.cache.active || []).map(i => [i.ID, i]));
+        const filters = loader.settings.filtering?.events?.map(f => f.toLowerCase()) ?? [];
+        const filteredIncidents = filters.length === 0 ? newIncidents
+            : newIncidents.filter(i => filters.includes(i.type.toLowerCase()));
+        const oldMap = new Map((loader.cache.active ?? []).map(i => [i.ID, i]));
         for (const incident of filteredIncidents) {
-            const oldIncident = oldIncMap.get(incident.ID);
-            if (!oldIncident || JSON.stringify(oldIncident) !== JSON.stringify(incident)) {
-                loader.cache.events.emit('onIncidentUpdate', incident);
+            const prev = oldMap.get(incident.ID);
+            if (!prev || JSON.stringify(prev) !== JSON.stringify(incident)) {
+                loader.cache.events.emit("onIncidentUpdate", incident);
             }
         }
         loader.cache.active = newIncidents;
