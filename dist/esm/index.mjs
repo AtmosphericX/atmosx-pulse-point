@@ -450,6 +450,28 @@ var PulsePoint = class {
     });
   }
   /**
+   * @function getAvailableAgencies
+   * @description
+   *     Fetches the list of available agencies from the PulsePoint API.
+   *     Decrypts the data using the provided key.
+   * 
+   * @returns {Promise<any[]>}
+   */
+  getAvailableAgencies() {
+    return __async(this, null, function* () {
+      var _a;
+      const response = yield utils_default.createHttpRequest(`https://api.pulsepoint.org/v1/webapp?resource=searchagencies&token=`);
+      if (response.error) {
+        utils_default.warn(`Failed to fetch agencies list: ${response.message}`);
+        return [];
+      }
+      const data = response.message || {};
+      const encryptedItems = decrypt_default.findObjects(data);
+      const decryptedItems = encryptedItems.map((item) => decrypt_default.CtIvS(item, settings.key || ""));
+      return ((_a = decryptedItems[0]) == null ? void 0 : _a.searchagencies) || [];
+    });
+  }
+  /**
    * @function getEvents
    * @description
    *      Fetches and processes agency and incident data from the PulsePoint API.

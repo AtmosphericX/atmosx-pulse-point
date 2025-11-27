@@ -92,6 +92,26 @@ export class PulsePoint {
     }
 
     /**
+     * @function getAvailableAgencies
+     * @description
+     *     Fetches the list of available agencies from the PulsePoint API.
+     *     Decrypts the data using the provided key.
+     * 
+     * @returns {Promise<any[]>}
+     */
+    public async getAvailableAgencies(): Promise<any[]> {
+        const response = await Utils.createHttpRequest(`https://api.pulsepoint.org/v1/webapp?resource=searchagencies&token=`);
+        if (response.error) {
+            Utils.warn(`Failed to fetch agencies list: ${response.message}`);
+            return [];
+        }
+        const data: any = response.message || {};
+        const encryptedItems = Decrypt.findObjects(data);
+        const decryptedItems = encryptedItems.map(item => Decrypt.CtIvS(item, loader.settings.key || ''));
+        return decryptedItems[0]?.searchagencies || [];
+    }
+
+    /**
      * @function getEvents
      * @description
      *      Fetches and processes agency and incident data from the PulsePoint API.
