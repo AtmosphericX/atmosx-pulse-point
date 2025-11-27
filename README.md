@@ -99,5 +99,5 @@ pulse.stop();
     - For inspiring me to create this module for storm spotting and night crawling streams.
 - [k3yomi](https://github.com/k3yomi)
     - Lead developer @ AtmosphericX and maintainer of this module.
-- [StarflightWx]
+- [StarflightWx](https://x.com/starflightVR)
     - For testing and providing feedback (Co-Developer and Spotter @ AtmosphericX)
