@@ -567,10 +567,10 @@ var PulsePoint = class {
         };
       });
       const filters = (_i = (_h = (_g = settings.filtering) == null ? void 0 : _g.events) == null ? void 0 : _h.map((f) => f.toLowerCase())) != null ? _i : [];
-      const filteredIncidents = filters.length === 0 ? newIncidents : newIncidents.filter((i) => filters.includes(i.type.toLowerCase()));
-      const oldMap = new Map(((_j = cache.active) != null ? _j : []).map((i) => [i.ID, i]));
+      const filteredIncidents = filters.length === 0 ? newIncidents : newIncidents.filter((i) => filters.includes(i.properties.type.toLowerCase()));
+      const oldMap = new Map(((_j = cache.active) != null ? _j : []).map((i) => [i.properties.ID, i]));
       for (const incident of filteredIncidents) {
-        const prev = oldMap.get(incident.ID);
+        const prev = oldMap.get(incident.properties.ID);
         if (!prev || JSON.stringify(prev) !== JSON.stringify(incident)) {
           cache.events.emit("onIncidentUpdate", incident);
         }

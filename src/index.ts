@@ -194,10 +194,10 @@ export class PulsePoint {
         });
         const filters = loader.settings.filtering?.events?.map(f => f.toLowerCase()) ?? [];
         const filteredIncidents = filters.length === 0 ? newIncidents
-            : newIncidents.filter(i => filters.includes(i.type.toLowerCase()));
-        const oldMap = new Map((loader.cache.active ?? []).map(i => [i.ID, i]));
+            : newIncidents.filter(i => filters.includes(i.properties.type.toLowerCase()));
+        const oldMap = new Map((loader.cache.active ?? []).map(i => [i.properties.ID, i]));
         for (const incident of filteredIncidents) {
-            const prev = oldMap.get(incident.ID);
+            const prev = oldMap.get(incident.properties.ID);
             if (!prev || JSON.stringify(prev) !== JSON.stringify(incident)) {
                 loader.cache.events.emit("onIncidentUpdate", incident);
             }
