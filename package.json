@@ -32,13 +32,13 @@
 	},
 	"homepage": "https://github.com/AtmosphericX/atmosx-pulse-point#readme",
 	"dependencies": {
-		"axios": "latest",
-		"croner": "latest",
-		"typescript": "latest",
-		"crypto-js": "latest"
+		"axios": "1.13.4",
+		"croner": "10.0.1",
+		"typescript": "5.9.3",
+		"crypto-js": "4.2.0"
 	},
 	"devDependencies": {
-		"@types/node": "latest",
-		"tsup": "latest"
+		"@types/node": "25.2.0",
+		"tsup": "8.5.1"
 	}
 }
