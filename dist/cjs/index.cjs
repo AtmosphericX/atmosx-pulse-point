@@ -586,8 +586,8 @@ var PulsePoint = class {
             stream: (_b2 = agency == null ? void 0 : agency.livestreamurl) != null ? _b2 : null,
             address: (_c2 = i.FullDisplayAddress) != null ? _c2 : "Not Specified",
             event: (_d2 = definitions.events[i.PulsePointIncidentCallType]) != null ? _d2 : "Unknown",
-            issued: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString() : null,
-            expires: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString() : null,
+            issued: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toLocaleString() : null,
+            expires: i.ClosedDateTime ? new Date(i.ClosedDateTime).toLocaleString() : null,
             units: Array.isArray(i.Unit) ? i.Unit.map((u) => {
               var _a3;
               return {

@@ -182,8 +182,8 @@ export class PulsePoint {
                     stream: agency?.livestreamurl ?? null,
                     address: i.FullDisplayAddress ?? "Not Specified",
                     event: loader.definitions.events[i.PulsePointIncidentCallType] ?? "Unknown",
-                    issued: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString() : null,
-                    expires: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString() : null,
+                    issued: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toLocaleString() : null,
+                    expires: i.ClosedDateTime ? new Date(i.ClosedDateTime).toLocaleString() : null,
                     units: Array.isArray(i.Unit) ? i.Unit.map(u => ({
                         id: u.UnitID,
                         status: loader.definitions.status[u.PulsePointDispatchStatus] ?? "Unknown",
