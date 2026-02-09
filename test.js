@@ -18,5 +18,5 @@ const pulse = new PulsePoint({
 });
 
 pulse.on(`onIncidentUpdate`, (event) => {
-    console.log(`[${event.properties.agency}] ${event.properties.type} at ${event.properties.address} (Units: x${(event.properties.units || []).length})`);
+    console.log(`[${event.properties.agency}] ${event.properties.event} at ${event.properties.address} (Units: x${(event.properties.units || []).length})`);
 });

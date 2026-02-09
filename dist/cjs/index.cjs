@@ -585,9 +585,9 @@ var PulsePoint = class {
             agency: (_a2 = agency == null ? void 0 : agency.short_agencyname) != null ? _a2 : "Unknown Agency",
             stream: (_b2 = agency == null ? void 0 : agency.livestreamurl) != null ? _b2 : null,
             address: (_c2 = i.FullDisplayAddress) != null ? _c2 : "Not Specified",
-            type: (_d2 = definitions.events[i.PulsePointIncidentCallType]) != null ? _d2 : "Unknown",
-            received: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString() : null,
-            closed: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString() : null,
+            event: (_d2 = definitions.events[i.PulsePointIncidentCallType]) != null ? _d2 : "Unknown",
+            issued: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString() : null,
+            expires: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString() : null,
             units: Array.isArray(i.Unit) ? i.Unit.map((u) => {
               var _a3;
               return {
@@ -600,7 +600,7 @@ var PulsePoint = class {
         };
       });
       const filters = (_i = (_h = (_g = settings.filtering) == null ? void 0 : _g.events) == null ? void 0 : _h.map((f) => f.toLowerCase())) != null ? _i : [];
-      const filteredIncidents = filters.length === 0 ? newIncidents : newIncidents.filter((i) => filters.includes(i.properties.type.toLowerCase()));
+      const filteredIncidents = filters.length === 0 ? newIncidents : newIncidents.filter((i) => filters.includes(i.properties.event.toLowerCase()));
       const oldMap = new Map(((_j = cache.active) != null ? _j : []).map((i) => [i.properties.ID, i]));
       for (const incident of filteredIncidents) {
         const prev = oldMap.get(incident.properties.ID);

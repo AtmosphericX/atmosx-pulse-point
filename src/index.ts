@@ -181,9 +181,9 @@ export class PulsePoint {
                     agency: agency?.short_agencyname ?? "Unknown Agency",
                     stream: agency?.livestreamurl ?? null,
                     address: i.FullDisplayAddress ?? "Not Specified",
-                    type: loader.definitions.events[i.PulsePointIncidentCallType] ?? "Unknown",
-                    received: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString() : null,
-                    closed: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString() : null,
+                    event: loader.definitions.events[i.PulsePointIncidentCallType] ?? "Unknown",
+                    issued: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toISOString() : null,
+                    expires: i.ClosedDateTime ? new Date(i.ClosedDateTime).toISOString() : null,
                     units: Array.isArray(i.Unit) ? i.Unit.map(u => ({
                         id: u.UnitID,
                         status: loader.definitions.status[u.PulsePointDispatchStatus] ?? "Unknown",
@@ -194,7 +194,7 @@ export class PulsePoint {
         });
         const filters = loader.settings.filtering?.events?.map(f => f.toLowerCase()) ?? [];
         const filteredIncidents = filters.length === 0 ? newIncidents
-            : newIncidents.filter(i => filters.includes(i.properties.type.toLowerCase()));
+            : newIncidents.filter(i => filters.includes(i.properties.event.toLowerCase()));
         const oldMap = new Map((loader.cache.active ?? []).map(i => [i.properties.ID, i]));
         for (const incident of filteredIncidents) {
             const prev = oldMap.get(incident.properties.ID);
