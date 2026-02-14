@@ -159,6 +159,7 @@ export class PulsePoint {
             try { return Decrypt.CtIvS(obj, key); } catch (err) { Utils.warn(loader.definitions.messages.decrypt_fail, true); return {}; }
         });
         const decAgencies = decrypted.find(d => d.agencies)?.agencies ?? [];
+        const recIncidents = decrypted.find(d => d.incidents)?.incidents?.recent ?? [];
         const decIncidents = decrypted.find(d => d.incidents)?.incidents?.active ?? [];
         const oldStations = loader.cache.stations ?? [];
         loader.cache.stations = decAgencies;
@@ -182,12 +183,12 @@ export class PulsePoint {
                     stream: agency?.livestreamurl ?? null,
                     address: i.FullDisplayAddress ?? "Not Specified",
                     event: loader.definitions.events[i.PulsePointIncidentCallType] ?? "Unknown",
-                    issued: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toLocaleString() : null,
-                    expires: i.ClosedDateTime ? new Date(i.ClosedDateTime).toLocaleString() : null,
+                    issued: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime) : null,
+                    expires: i.ClosedDateTime ? new Date(i.ClosedDateTime) : null,
                     units: Array.isArray(i.Unit) ? i.Unit.map(u => ({
                         id: u.UnitID,
                         status: loader.definitions.status[u.PulsePointDispatchStatus] ?? "Unknown",
-                        closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toISOString() : null
+                        closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime) : null
                     })) : []
                 }
             };
@@ -201,6 +202,14 @@ export class PulsePoint {
             if (!prev || JSON.stringify(prev) !== JSON.stringify(incident)) {
                 loader.cache.events.emit("onIncidentUpdate", incident);
             }
+        }
+        for (const oldIncident of recIncidents) {
+            if (!filteredIncidents.some(i => i.properties.ID === oldIncident.ID)) {
+                loader.cache.active = loader.cache.active?.filter(i => i.properties.ID !== oldIncident.ID) ?? [];
+            }
+            if (loader.cache.expiredIds.includes(oldIncident.ID)) continue;
+            loader.cache.expiredIds.push(oldIncident.ID);
+            loader.cache.events.emit("onIncidentClosed", oldIncident.ID);
         }
         loader.cache.active = newIncidents;
     }

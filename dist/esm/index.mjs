@@ -187,6 +187,7 @@ var packages = {
 var cache = {
   stations: [],
   active: [],
+  expiredIds: [],
   events: new events.EventEmitter(),
   lastWarn: null,
   isReady: true
@@ -497,7 +498,7 @@ var PulsePoint = class {
    */
   getEvents(agencies, key) {
     return __async(this, null, function* () {
-      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j;
+      var _a, _b, _c, _d, _e, _f, _g, _h, _i, _j, _k, _l, _m, _n, _o;
       if (!agencies.length) return;
       const agencyIds = agencies.join(",");
       const urls = {
@@ -529,8 +530,9 @@ var PulsePoint = class {
         }
       });
       const decAgencies = (_b = (_a = decrypted.find((d) => d.agencies)) == null ? void 0 : _a.agencies) != null ? _b : [];
-      const decIncidents = (_e = (_d = (_c = decrypted.find((d) => d.incidents)) == null ? void 0 : _c.incidents) == null ? void 0 : _d.active) != null ? _e : [];
-      const oldStations = (_f = cache.stations) != null ? _f : [];
+      const recIncidents = (_e = (_d = (_c = decrypted.find((d) => d.incidents)) == null ? void 0 : _c.incidents) == null ? void 0 : _d.recent) != null ? _e : [];
+      const decIncidents = (_h = (_g = (_f = decrypted.find((d) => d.incidents)) == null ? void 0 : _f.incidents) == null ? void 0 : _g.active) != null ? _h : [];
+      const oldStations = (_i = cache.stations) != null ? _i : [];
       cache.stations = decAgencies;
       if (JSON.stringify(oldStations) !== JSON.stringify(decAgencies)) {
         cache.events.emit("onStationUpdate", decAgencies, oldStations);
@@ -553,27 +555,35 @@ var PulsePoint = class {
             stream: (_b2 = agency == null ? void 0 : agency.livestreamurl) != null ? _b2 : null,
             address: (_c2 = i.FullDisplayAddress) != null ? _c2 : "Not Specified",
             event: (_d2 = definitions.events[i.PulsePointIncidentCallType]) != null ? _d2 : "Unknown",
-            issued: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime).toLocaleString() : null,
-            expires: i.ClosedDateTime ? new Date(i.ClosedDateTime).toLocaleString() : null,
+            issued: i.CallReceivedDateTime ? new Date(i.CallReceivedDateTime) : null,
+            expires: i.ClosedDateTime ? new Date(i.ClosedDateTime) : null,
             units: Array.isArray(i.Unit) ? i.Unit.map((u) => {
               var _a3;
               return {
                 id: u.UnitID,
                 status: (_a3 = definitions.status[u.PulsePointDispatchStatus]) != null ? _a3 : "Unknown",
-                closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime).toISOString() : null
+                closed: u.UnitClearedDateTime ? new Date(u.UnitClearedDateTime) : null
               };
             }) : []
           }
         };
       });
-      const filters = (_i = (_h = (_g = settings.filtering) == null ? void 0 : _g.events) == null ? void 0 : _h.map((f) => f.toLowerCase())) != null ? _i : [];
+      const filters = (_l = (_k = (_j = settings.filtering) == null ? void 0 : _j.events) == null ? void 0 : _k.map((f) => f.toLowerCase())) != null ? _l : [];
       const filteredIncidents = filters.length === 0 ? newIncidents : newIncidents.filter((i) => filters.includes(i.properties.event.toLowerCase()));
-      const oldMap = new Map(((_j = cache.active) != null ? _j : []).map((i) => [i.properties.ID, i]));
+      const oldMap = new Map(((_m = cache.active) != null ? _m : []).map((i) => [i.properties.ID, i]));
       for (const incident of filteredIncidents) {
         const prev = oldMap.get(incident.properties.ID);
         if (!prev || JSON.stringify(prev) !== JSON.stringify(incident)) {
           cache.events.emit("onIncidentUpdate", incident);
         }
+      }
+      for (const oldIncident of recIncidents) {
+        if (!filteredIncidents.some((i) => i.properties.ID === oldIncident.ID)) {
+          cache.active = (_o = (_n = cache.active) == null ? void 0 : _n.filter((i) => i.properties.ID !== oldIncident.ID)) != null ? _o : [];
+        }
+        if (cache.expiredIds.includes(oldIncident.ID)) continue;
+        cache.expiredIds.push(oldIncident.ID);
+        cache.events.emit("onIncidentClosed", oldIncident.ID);
       }
       cache.active = newIncidents;
     });

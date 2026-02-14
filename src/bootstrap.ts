@@ -35,6 +35,7 @@ export const packages = {
 export const cache = {
     stations: [],
     active: [],
+    expiredIds: [],
     events: new events.EventEmitter(),
     lastWarn: null,
     isReady: true,

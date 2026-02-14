@@ -40,12 +40,21 @@ Please ensure you comply with all relevant laws and regulations regarding the us
 
 ## Events and Listeners
 
-### Event `Update`
+### Event `onIncidentUpdate`
 This event listener is triggered whenever there is an update or new event in the incident data. The callback function receives an array of the incident objects and can be used to process or display the data as needed.
 
 ```js
 pulse.on(`onIncidentUpdate`, (incident) => {
     console.log(incident);
+});
+```
+
+### Event `onIncidentClosed`
+This event listener is triggered when an incident is closed. When received, you should dispose of the incident data to maintain an accurate live view of active events.
+
+```js
+pulse.on(`onIncidentClosed`, (incidentID) => {
+    console.log(incidentID);
 });
 ```
 
