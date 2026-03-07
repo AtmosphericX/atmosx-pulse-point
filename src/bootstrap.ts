@@ -59,7 +59,7 @@ export const definitions = {
         client_stopped: `PulsePoint client has been stopped.`,
         stations_updated: `PulsePoint station list has been updated.`,
         decrypt_fail: `Failed to decrypt PulsePoint data. Please verify your passphrase key is correct.`,
-        no_encrypted_data: `No encrypted data received from PulsePoint API.`,
+        no_encrypted_data: `No encrypted data received from PulsePoint API. Retrying...`,
         failed_fetch: `Failed to fetch data from PulsePoint API.`,
     },
 };

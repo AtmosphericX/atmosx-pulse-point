@@ -153,6 +153,7 @@ export class PulsePoint {
         const data = Object.fromEntries(responses) as {agencies: any; incidents: any;};
         const encrypted = Decrypt.findObjects(data);
         if (!encrypted.length) {
+            this.getEvents(agencies, key);
             return Utils.warn(loader.definitions.messages.no_encrypted_data, true);
         }
         const decrypted = encrypted.map(obj => {
